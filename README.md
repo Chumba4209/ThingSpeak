@@ -39,9 +39,13 @@ Because the microcontroller is sending (writing) data to ThingSpeak. The Read AP
 **Understanding the OLED Display**
 The OLED screen (SSD1306) gives you live feedback:
 > During setup: Instructions for how to connect to the WiFi configuration portal
+
 > After successful connection: A message like “Connected!”
+
 > During operation: Displays current temperature and pressure from the BMP180 sensor
+
 If the sensor is not connected or fails, the display shows an error like:
+
 > BMP180 not found!
 
 **Using the WiFiManager Config Portal**
