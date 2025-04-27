@@ -1,0 +1,117 @@
+#include <ESP8266WiFi.h>
+#include <Wire.h>
+#include <Adafruit_BMP085.h>
+#include <WiFiManager.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+Adafruit_BMP085 bmp;
+WiFiClient client;
+
+char thingspeak_api[40] = "";
+
+const char* server = "api.thingspeak.com";
+unsigned long previousMillis = 0;
+
+void setup_wifi() {
+  WiFiManager wifiManager;
+
+  // Custom parameter for ThingSpeak Write API Key
+  WiFiManagerParameter custom_api_key("apikey", "ThingSpeak Write API Key", thingspeak_api, 40);
+  wifiManager.addParameter(&custom_api_key);
+
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.println("WiFi Setup:");
+  display.println("1. Connect to BMP180Config");
+  display.println("2. Enter WiFi & Write API Key");
+  display.println("3. Save ");
+  display.display();
+
+  wifiManager.setConfigPortalTimeout(180);
+  wifiManager.startConfigPortal("BMP180Config");
+
+  // Save API key from input
+  strncpy(thingspeak_api, custom_api_key.getValue(), sizeof(thingspeak_api));
+  thingspeak_api[sizeof(thingspeak_api) - 1] = '\0';
+
+  Serial.println("WiFi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+  Serial.print("ThingSpeak Write API Key: ");
+  Serial.println(thingspeak_api);
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println("OLED init failed");
+    while (true);
+  }
+
+  setup_wifi();
+
+  if (!bmp.begin()) {
+    Serial.println("BMP180 sensor not found!");
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println("BMP180 not found!");
+    display.display();
+    while (true);
+  }
+
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.println("Connected!");
+  display.display();
+}
+
+void loop() {
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis > 30000) {
+    previousMillis = currentMillis;
+
+    // Check for valid API key and WiFi before sending
+    if (WiFi.status() == WL_CONNECTED && strlen(thingspeak_api) > 0) {
+      float temperature = bmp.readTemperature();
+      float pressure = bmp.readPressure() / 100.0;
+
+      if (client.connect(server, 80)) {
+        String postStr = String(thingspeak_api);
+        postStr += "&field1=" + String(temperature);
+        postStr += "&field2=" + String(pressure);
+        postStr += "\r\n\r\n";
+
+        client.print("POST /update HTTP/1.1\n");
+        client.print("Host: api.thingspeak.com\n");
+        client.print("Connection: close\n");
+        client.print("X-THINGSPEAKAPIKEY: " + String(thingspeak_api) + "\n");
+        client.print("Content-Type: application/x-www-form-urlencoded\n");
+        client.print("Content-Length: ");
+        client.print(postStr.length());
+        client.print("\n\n");
+        client.print(postStr);
+
+        Serial.printf("Sent -> Temp: %.2f °C, Pressure: %.2f hPa\n", temperature, pressure);
+
+        display.clearDisplay();
+        display.setCursor(0, 0);
+        display.printf("Temp: %.2f C\n", temperature);
+        display.printf("Pres: %.2f hPa\n", pressure);
+        display.display();
+      }
+
+      client.stop();
+    } else {
+      Serial.println("WiFi or ThingSpeak Write API Key not available. Skipping data send.");
+    }
+  }
+}
