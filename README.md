@@ -30,7 +30,7 @@ Because the microcontroller is sending (writing) data to ThingSpeak. The Read AP
 
 **Flash the Code via Solution Builders**
 1.	Click the following link which will redirect you to Carenuity’s solution builders platform and click install on th **BMP180Thingspeak Application**: https://solutions.carenuity.com/solutions/CvNzl2HewiJ08jA2p7mN?ecosystem=mxPH5kGodhJBicKPFXwx
-2.	Connect your ESP8266-based board (e.g., NodeMCU or Wemos D1 Mini)
+2.	Connect your ESP32-based (i.e C3Mini) or ESP8266-based board (i.eNodeMCU or Wemos D1 Mini)
 3.	Select the correct board and COM port
 4.	Click Install
 
@@ -45,7 +45,7 @@ If the sensor is not connected or fails, the display shows an error like:
 > BMP180 not found!
 
 **Using the WiFiManager Config Portal**
-After flashing, the ESP8266 will:
+After flashing, the microcontroller will:
 1.	Start a Wi-Fi Access Point named BMP180Config
 2.	You should:
 * Connect to this WiFi using your phone or computer
